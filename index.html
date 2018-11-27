@@ -114,6 +114,7 @@
       </ul>
 
       <div id="actions">
+        <a id="add" v-on:click="addTweet">Add Tweet</a>
         <a id="clear" v-on:click="clear">Clear</a>
         <a id="export" v-on:click="exportFile">Export</a>
       </div>
@@ -153,6 +154,7 @@
             localStorage.clear();
             window.location.reload();
           },
+
           exportFile: function () {
             const xhr = new XMLHttpRequest();
             xhr.open('GET', 'assets/template.md');
@@ -165,12 +167,14 @@
                 ctx[listName] = '';
                 // Get from/to dates.
                 this.lists[listName].forEach(tweet => {
-                  const time = new Date(tweet.time).getTime();
-                  if (!fromDate || time < fromDate) { fromDate = time; }
-                  if (!toDate || time > toDate) { toDate = time; }
+                  if (tweet.time !== undefined) {
+                    const time = new Date(tweet.time).getTime();
+                    if (!fromDate || time < fromDate) { fromDate = time; }
+                    if (!toDate || time > toDate) { toDate = time; }
+                  }
 
                   // Add Tweets to template.
-                  ctx[listName] += `\n${tweet.embed}`;
+                  ctx[listName] += `\n${tweet.url}`;
                 });
               });
               fromDate = new Date(fromDate);
@@ -237,19 +241,18 @@
             }
 
             save();
+          },
 
-            function loadTweet (id) {
-              // Load in swapped Tweet.
-              setTimeout(() => {
-                document.querySelector(`[data-id="${id}"] .tweetContents`).innerHTML = '';
-                twttr.widgets.createTweet(
-                  id,
-                  document.querySelector(`[data-id="${id}"] .tweetContents`)
-                ).then(() => {
-                  document.querySelector(`[data-id="${id}"]`).style.display = 'block';
-                });
-              }, 100);
-            }
+          addTweet: function () {
+            const link = window.prompt('Enter Tweet URL');
+            const id = /status\/(\d+)/g.exec(link)[1];
+            this.lists.unassigned.push({
+              id: id,
+              time: undefined,
+              url: link
+            });
+            loadTweet(id);
+            save();
           }
         }
       })
@@ -288,6 +291,18 @@
             });
           });
         }, 100);
+      }
+
+      function loadTweet (id) {
+        setTimeout(() => {
+          document.querySelector(`[data-id="${id}"] .tweetContents`).innerHTML = '';
+          twttr.widgets.createTweet(
+            id,
+            document.querySelector(`[data-id="${id}"] .tweetContents`)
+          ).then(() => {
+            document.querySelector(`[data-id="${id}"]`).style.display = 'block';
+          });
+        }, 200);
       }
     </script>
   </body>
