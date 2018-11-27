@@ -65,17 +65,19 @@
         padding: 10px;
         text-align: center;
       }
-      #export {
-        background: #24CAFF;
+      #actions {
         bottom: 0;
+        position: fixed;
+        right: 0;
+      }
+      #actions a {
+        background: #24CAFF;
         color: #FAFAFA;
         cursor: pointer;
         display: inline-block;
         font-family: monospace;
         opacity: 0.5;
         padding: 10px 0;
-        position: fixed;
-        right: 0;
         text-align: center;
         text-transform: uppercase;
         width: 100px;
@@ -100,28 +102,43 @@
         </li>
       </ul>
 
-      <a id="export" v-on:click="exportFile">Export</a>
+      <div id="actions">
+        <a id="clear" v-on:click="clear">Clear</a>
+        <a id="export" v-on:click="exportFile">Export</a>
+      </div>
     </div>
 
     <script>
-      // Initialize data.
-      const data = {
-        colors: {},
-        lists: {},
-        listNames: [
-          'unassigned', 'featured', 'projects', 'components', 'articles', 'events', 'misc', 'discarded'
-        ]
-      };
-      data.listNames.forEach(listName => {
-        data.colors[listName] = randomColor({luminosity: 'dark'});
-        data.lists[listName] = [];
-      });
+      let data = localStorage.getItem('data');
+      let hadLocalData = false;
+      if (data) {
+        data = JSON.parse(data);
+        hadLocalData = true;
+        loadTweets();
+      } else {
+        // Initialize data.
+        data = {
+          colors: {},
+          lists: {},
+          listNames: [
+            'unassigned', 'featured', 'projects', 'components', 'articles', 'events', 'misc', 'discarded'
+          ]
+        };
+        data.listNames.forEach(listName => {
+          data.colors[listName] = randomColor({luminosity: 'dark'});
+          data.lists[listName] = [];
+        });
+      }
 
       // Create Vue.
       const app = new Vue({
         el: '#app',
         data: data,
         methods: {
+          clear: function () {
+            localStorage.clear();
+            window.location.reload();
+          },
           exportFile: function () {
             const xhr = new XMLHttpRequest();
             xhr.open('GET', 'assets/template.md');
@@ -162,6 +179,7 @@
             const tweet = this.lists[fromList][index];
             this.$delete(this.lists[fromList], index);
             this.lists[toList].push(tweet);
+            save();
 
             // Load in single Tweet.
             setTimeout(() => {
@@ -186,7 +204,17 @@
         for (let i = 0; i < tweets.length; i++) {
           app.lists.unassigned.push(tweets[i]);
         }
+        save();
+        loadTweets();
+      });
 
+      if (!hadLocalData) { xhr.send(); }
+
+      function save () {
+        localStorage.setItem('data', JSON.stringify(data));
+      }
+
+      function loadTweets () {
         // Load in Tweets.
         setTimeout(() => {
           let tweets = document.querySelectorAll(`[data-id]`);
@@ -199,8 +227,7 @@
             });
           });
         }, 100);
-      });
-      xhr.send();
+      }
     </script>
   </body>
 </html>
