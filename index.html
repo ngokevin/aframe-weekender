@@ -3,19 +3,29 @@
   <head>
     <title>A-Frame Weekender</title>
     <script src="https://unpkg.com/vue@2.5.17/dist/vue.js"></script>
-    <script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+    <script src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+    <script src="https://cdn.jsdelivr.net/gh/davidmerfield/randomColor/randomColor.js"></script>
     <style>
       html,
       body {
+        background: #333;
+        height: 100%;
+        margin: 0;
+        overflow-y: hidden;
+        padding: 0;
+      }
+      ul {
+        list-style: none;
         margin: 0;
         padding: 0;
       }
-      #app {
+      #tweetColumns {
         display: flex;
+        overflow: auto;
+        width: 2650px;
       }
       .tweetListContainer {
         align-items: center;
-        background: #24CAFF;
         display: flex;
         flex-direction: column;
         margin: 0;
@@ -29,50 +39,111 @@
         text-transform: uppercase;
       }
       .tweetList {
-        list-style: none;
-        margin: 0;
         overflow: auto;
-        padding: 0;
+        width: 100%;
+      }
+      .tweet {
+        border-bottom: 1px solid #CCC;
+        display: none;
+        padding-bottom: 15px;
+      }
+      .moveActions {
+        display: flex;
+        height: 32px;
+        font-family: monospace;
+        justify-content: center;
+        text-transform: uppercase;
+        width: 100%;
+      }
+      .moveAction {
+        color: #FAFAFA;
+        cursor: pointer;
+        overflow: auto;
+        padding: 10px;
+        text-align: center;
       }
     </style>
   </head>
   <body>
     <div id="app">
-      <div id="tweetColumns">
-        <div class="tweetListContainer">
-          <h2 class="tweetListHeader">Unassigned</h2>
+      <ul id="tweetColumns">
+        <li class="tweetListContainer" v-for="listName in listNames" :style="{backgroundColor: colors[listName]}">
+          <h2 class="tweetListHeader">{{ listName }}</h2>
           <ul class="tweetList">
-            <li v-for="tweet in tweets">
-              <span v-html="tweet.embed"></span>
+            <li class="tweet" v-for="(tweet, i) in lists[listName]" :data-id="tweet.id" :key="tweet.id">
+              <span class="tweetContents"></span>
+              <ul class="moveActions">
+                <li class="moveAction" v-for="toListName in listNames" :style="{backgroundColor: colors[toListName]}" v-on:click="move(i, listName, toListName)">
+                  {{ toListName.substring(0, 3) }}
+                <li>
+              </ul>
             </li>
           </ul>
-        </div>
-      </div>
+        </li>
+      </ul>
     </div>
 
     <script>
+      // Initialize data.
+      const data = {
+        colors: {},
+        lists: {},
+        listNames: [
+          'unassigned', 'featured', 'projects', 'components', 'articles', 'events', 'misc', 'discarded'
+        ]
+      };
+      data.listNames.forEach(listName => {
+        data.colors[listName] = randomColor({luminosity: 'dark'});
+        data.lists[listName] = [];
+      });
+
+      // Create Vue.
       const app = new Vue({
         el: '#app',
-        data: {
-          tweets: [],
-          lists: {
-            featured: [],
-            projects: [],
-            components: [],
-            articles: [],
-            events: [],
-            misc: []
+        data: data,
+        methods: {
+          move: function (index, fromList, toList) {
+            // Move Tweet from one list to another.
+            const tweet = this.lists[fromList][index];
+            this.$delete(this.lists[fromList], index);
+            this.lists[toList].push(tweet);
+
+            // Load in single Tweet.
+            setTimeout(() => {
+              twttr.widgets.createTweet(
+                tweet.id,
+                document.querySelector(`[data-id="${tweet.id}"] .tweetContents`)
+              ).then(() => {
+                document.querySelector(`[data-id="${tweet.id}"]`).style.display = 'block';
+              });
+            }, 100);
           }
         }
       })
 
+      // Fetch Tweets.
       const xhr = new XMLHttpRequest();
+      const hrefRegex = /href=".*?"/g;
       xhr.open('GET', 'tweets.json');
       xhr.addEventListener('load', function () {
-        const tweets = JSON.parse(this.responseText);
+        // Push to unassigned list.
+        let tweets = JSON.parse(this.responseText);
         for (let i = 0; i < tweets.length; i++) {
-          app.tweets.push(tweets[i]);
+          app.lists.unassigned.push(tweets[i]);
         }
+
+        // Load in Tweets.
+        setTimeout(() => {
+          let tweets = document.querySelectorAll(`[data-id]`);
+          tweets.forEach(tweet => {
+            twttr.widgets.createTweet(
+              tweet.dataset.id,
+              tweet.querySelector('.tweetContents')
+            ).then(() => {
+              tweet.style.display = 'block';
+            });
+          });
+        }, 100);
       });
       xhr.send();
     </script>

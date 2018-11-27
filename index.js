@@ -7,7 +7,10 @@ let tweets = [];
 
 function scrape (count, fromDate, toDate) {
   // Use scrape-twitter.
-  const stream = new Scraper.TweetStream('aframevr', 'latest', {count: count || 200});
+  count = count || 200;
+  const stream = new Scraper.TweetStream('aframevr', 'latest', {count: count});
+
+  console.log(`Fetching ${count} Tweets from ${fromDate} to ${toDate}.`);
 
   if (fromDate && toDate) {
     fromDate = new Date(fromDate).getTime();
@@ -15,6 +18,8 @@ function scrape (count, fromDate, toDate) {
   }
 
   streamToPromise(stream).then(tweetStream => {
+    console.log(`${tweetStream.length} tweets fetched.`);
+
     // Filter and process.
     const promises = tweetStream
       .filter(tweet => !tweet.isRetweet && !tweet.isReplyTo)
@@ -31,6 +36,7 @@ function scrape (count, fromDate, toDate) {
   function finish () {
     // Sort and write.
     tweets = tweets.sort(tweet => tweet.favoriteCount)
+    console.log(`Writing ${tweets.length} tweets.`);
     fs.writeFileSync('tweets.json', JSON.stringify(tweets));
   }
 }
@@ -45,6 +51,7 @@ function processTweet (tweet) {
     getEmbed(tweet.url).then(embed => {
       tweet.embed = embed;
       tweets.push(tweet);
+      console.log(`Processed ${tweet.url}`);
       resolve();
     }).catch(resolve);
   });
