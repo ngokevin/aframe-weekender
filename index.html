@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>A-Frame Weekender</title>
+    <script src="https://unpkg.com/vue@2.5.17/dist/vue.js"></script>
+    <script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      #app {
+        display: flex;
+      }
+      .tweetListContainer {
+        align-items: center;
+        background: #24CAFF;
+        display: flex;
+        flex-direction: column;
+        margin: 0;
+        padding: 5px;
+        height: 800px;
+        width: 320px;
+      }
+      .tweetListHeader {
+        color: #FAFAFA;
+        font-family: monospace;
+        text-transform: uppercase;
+      }
+      .tweetList {
+        list-style: none;
+        margin: 0;
+        overflow: auto;
+        padding: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <div id="tweetColumns">
+        <div class="tweetListContainer">
+          <h2 class="tweetListHeader">Unassigned</h2>
+          <ul class="tweetList">
+            <li v-for="tweet in tweets">
+              <span v-html="tweet.embed"></span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const app = new Vue({
+        el: '#app',
+        data: {
+          tweets: [],
+          lists: {
+            featured: [],
+            projects: [],
+            components: [],
+            articles: [],
+            events: [],
+            misc: []
+          }
+        }
+      })
+
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', 'tweets.json');
+      xhr.addEventListener('load', function () {
+        const tweets = JSON.parse(this.responseText);
+        for (let i = 0; i < tweets.length; i++) {
+          app.tweets.push(tweets[i]);
+        }
+      });
+      xhr.send();
+    </script>
+  </body>
+</html>
