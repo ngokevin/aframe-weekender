@@ -2,9 +2,12 @@
 <html>
   <head>
     <title>A-Frame Weekender</title>
-    <script src="https://unpkg.com/vue@2.5.17/dist/vue.js"></script>
-    <script src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
-    <script src="https://cdn.jsdelivr.net/gh/davidmerfield/randomColor/randomColor.js"></script>
+    <script src="assets/js/generate-download-link.js"></script>
+    <script src="assets/js/nunjucks.js"></script>
+    <script src="assets/js/randomColor.js"></script>
+    <script src="assets/js/twitter.js"></script>
+    <script src="assets/js/unescape.js"></script>
+    <script src="assets/js/vue.js"></script>
     <style>
       html,
       body {
@@ -97,7 +100,7 @@
         </li>
       </ul>
 
-      <a id="export">Export</a>
+      <a id="export" v-on:click="exportFile">Export</a>
     </div>
 
     <script>
@@ -119,6 +122,41 @@
         el: '#app',
         data: data,
         methods: {
+          exportFile: function () {
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', 'assets/template.md');
+            xhr.addEventListener('load', () => {
+              const ctx = {};
+
+              let fromDate = undefined;
+              let toDate = undefined;
+              this.listNames.forEach(listName => {
+                ctx[listName] = '';
+                // Get from/to dates.
+                this.lists[listName].forEach(tweet => {
+                  const time = new Date(tweet.time).getTime();
+                  if (!fromDate || time < fromDate) { fromDate = time; }
+                  if (!toDate || time > toDate) { toDate = time; }
+
+                  // Add Tweets to template.
+                  ctx[listName] += `\n${tweet.embed}`;
+                });
+              });
+              fromDate = new Date(fromDate);
+              toDate = new Date(toDate);
+              ctx.fromDate = `${fromDate.getFullYear()}-${fromDate.getMonth() + 1}-${fromDate.getDate()}`;
+              ctx.toDate = `${toDate.getFullYear()}-${toDate.getMonth() + 1}-${toDate.getDate()}`;
+
+              // Render and download.
+              const str = nunjucks.renderString(xhr.responseText, ctx);
+              const a = generateDownloadLink({data: str, title: 'md', filename: 'awoa-x-x.md'});
+              a.style.display = 'none';
+              document.body.appendChild(a);
+              a.click();
+              a.parentNode.removeChild(a);
+            });
+            xhr.send();
+          },
           move: function (index, fromList, toList) {
             // Move Tweet from one list to another.
             const tweet = this.lists[fromList][index];
@@ -141,7 +179,7 @@
       // Fetch Tweets.
       const xhr = new XMLHttpRequest();
       const hrefRegex = /href=".*?"/g;
-      xhr.open('GET', 'tweets.json');
+      xhr.open('GET', 'assets/tweets.json');
       xhr.addEventListener('load', function () {
         // Push to unassigned list.
         let tweets = JSON.parse(this.responseText);

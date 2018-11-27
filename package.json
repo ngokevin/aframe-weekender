@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Helper to create 'A Week of A-Frame' roundups.",
   "scripts": {
-    "scrape": "node index.js scrape",
+    "scrape": "node lib/index.js scrape",
     "start": "python -m SimpleHTTPServer 5555"
   },
   "author": "Kevin Ngo <kevin@supermedium.com>",
