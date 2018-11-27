@@ -50,7 +50,8 @@
         display: none;
         padding-bottom: 15px;
       }
-      .moveActions {
+      #moveActions,
+      #reorder {
         display: flex;
         height: 32px;
         font-family: monospace;
@@ -58,7 +59,8 @@
         text-transform: uppercase;
         width: 100%;
       }
-      .moveAction {
+      .moveAction,
+      .reorder {
         color: #FAFAFA;
         cursor: pointer;
         overflow: auto;
@@ -82,6 +84,9 @@
         text-transform: uppercase;
         width: 100px;
       }
+      .reorder {
+        font-size: 18px;
+      }
     </style>
   </head>
   <body>
@@ -92,10 +97,14 @@
           <ul class="tweetList">
             <li class="tweet" v-for="(tweet, i) in lists[listName]" :data-id="tweet.id" :key="tweet.id">
               <span class="tweetContents"></span>
-              <ul class="moveActions">
+              <ul id="moveActions">
                 <li class="moveAction" v-for="toListName in listNames" :style="{backgroundColor: colors[toListName]}" v-on:click="move(i, listName, toListName)">
                   {{ toListName.substring(0, 3) }}
                 <li>
+              </ul>
+              <ul id="reorder">
+                <li class="reorder prev" v-on:click="reorder(listName, i, 'prev')">&uarr;</li>
+                <li class="reorder next" v-on:click="reorder(listName, i, 'next')">&darr;</li>
               </ul>
             </li>
           </ul>
@@ -190,6 +199,36 @@
                 document.querySelector(`[data-id="${tweet.id}"]`).style.display = 'block';
               });
             }, 100);
+          },
+          reorder: function (listName, i, dir) {
+            if (i === 0 && dir === 'prev') { return; }
+            if (i === listName.length - 1 && dir === 'next') { return; }
+
+            const currentItem = this.lists[listName][i];
+
+            const swapIndex = dir === 'prev' ? i - 1 : i + 1;
+            const swapItem = this.lists[listName][swapIndex];
+
+            this.lists[listName][i] = swapItem;
+            this.lists[listName][swapIndex] = currentItem;
+            this.lists[listName].push('');
+            this.lists[listName].pop();
+            save();
+
+            loadTweet(currentItem.id);
+
+            function loadTweet (id) {
+              // Load in swapped Tweet.
+              setTimeout(() => {
+                document.querySelector(`[data-id="${id}"] .tweetContents`).innerHTML = '';
+                twttr.widgets.createTweet(
+                  id,
+                  document.querySelector(`[data-id="${id}"] .tweetContents`)
+                ).then(() => {
+                  document.querySelector(`[data-id="${id}"]`).style.display = 'block';
+                });
+              });
+            }
           }
         }
       })
