@@ -92,8 +92,8 @@
   <body>
     <div id="app">
       <ul id="tweetColumns">
-        <li class="tweetListContainer" v-for="listName in listNames" :style="{backgroundColor: colors[listName]}">
-          <h2 class="tweetListHeader">{{ listName }}</h2>
+        <li class="tweetListContainer" v-for="listName in listNames" :style="{backgroundColor: colors[listName]}" :data-list="listName">
+          <h2 class="tweetListHeader">{{ listName }} ({{ lists[listName].length }})</h2>
           <ul class="tweetList">
             <li class="tweet" v-for="(tweet, i) in lists[listName]" :data-id="tweet.id" :key="tweet.id">
               <span class="tweetContents"></span>
@@ -103,8 +103,10 @@
                 <li>
               </ul>
               <ul id="reorder">
-                <li class="reorder prev" v-on:click="reorder(listName, i, 'prev')">&uarr;</li>
-                <li class="reorder next" v-on:click="reorder(listName, i, 'next')">&darr;</li>
+                <li class="reorder" v-on:click="reorder(listName, i, 'prev', true)">&Uarr;</li>
+                <li class="reorder" v-on:click="reorder(listName, i, 'prev')">&uarr;</li>
+                <li class="reorder" v-on:click="reorder(listName, i, 'next')">&darr;</li>
+                <li class="reorder" v-on:click="reorder(listName, i, 'next', true)">&Darr;</li>
               </ul>
             </li>
           </ul>
@@ -120,7 +122,9 @@
     <script>
       let data = localStorage.getItem('data');
       let hadLocalData = false;
+
       if (data) {
+        // Load from localStorage.
         data = JSON.parse(data);
         hadLocalData = true;
         loadTweets();
@@ -130,7 +134,8 @@
           colors: {},
           lists: {},
           listNames: [
-            'unassigned', 'featured', 'projects', 'components', 'articles', 'events', 'misc', 'discarded'
+            'unassigned', 'featured', 'projects', 'components', 'articles', 'events', 'misc',
+            'discarded'
           ]
         };
         data.listNames.forEach(listName => {
@@ -183,6 +188,7 @@
             });
             xhr.send();
           },
+
           move: function (index, fromList, toList) {
             // Move Tweet from one list to another.
             const tweet = this.lists[fromList][index];
@@ -200,22 +206,37 @@
               });
             }, 100);
           },
-          reorder: function (listName, i, dir) {
-            if (i === 0 && dir === 'prev') { return; }
-            if (i === listName.length - 1 && dir === 'next') { return; }
+
+          reorder: function (listName, i, dir, toEnd) {
+            if (i === 0 && dir === 'prev' && !toEnd) { return; }
+            if (i === listName.length - 1 && dir === 'next' && !toEnd) { return; }
 
             const currentItem = this.lists[listName][i];
 
-            const swapIndex = dir === 'prev' ? i - 1 : i + 1;
-            const swapItem = this.lists[listName][swapIndex];
+            if (toEnd) {
+              // Moving item to top or bottom.
+              this.lists[listName].splice(i, 1);
+              if (dir === 'prev') {
+                this.lists[listName].unshift(currentItem);
+              } else {
+                this.lists[listName].push(currentItem);
+              }
+              loadTweet(currentItem.id);
+            } else {
+              // Moving up or down one. Swap.
+              let swapIndex = dir === 'prev' ? i - 1 : i + 1;
+              const swapItem = this.lists[listName][swapIndex];
+              this.lists[listName][i] = swapItem;
+              this.lists[listName][swapIndex] = currentItem;
+              this.lists[listName].push('');
+              this.lists[listName].pop();
 
-            this.lists[listName][i] = swapItem;
-            this.lists[listName][swapIndex] = currentItem;
-            this.lists[listName].push('');
-            this.lists[listName].pop();
+              // Refresh Tweets.
+              loadTweet(currentItem.id);
+              loadTweet(swapItem.id);
+            }
+
             save();
-
-            loadTweet(currentItem.id);
 
             function loadTweet (id) {
               // Load in swapped Tweet.
@@ -227,7 +248,7 @@
                 ).then(() => {
                   document.querySelector(`[data-id="${id}"]`).style.display = 'block';
                 });
-              });
+              }, 100);
             }
           }
         }
@@ -250,6 +271,7 @@
       if (!hadLocalData) { xhr.send(); }
 
       function save () {
+        // Save to localStorage.
         localStorage.setItem('data', JSON.stringify(data));
       }
 
