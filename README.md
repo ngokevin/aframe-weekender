@@ -8,7 +8,7 @@ Scrape Twitter:
 
 ```
 npm install
-node lib/index.js <MAX_TWEETS> <FROM_DATE> <TO_DATE>
+node lib/index.js scrape <MAX_TWEETS> <FROM_DATE> <TO_DATE>
 ```
 
 Run frontend:
