@@ -47,7 +47,7 @@ author: https://supermedium.com|Kevin Ngo
 </div>
 {% endif %}
 
-{% if miscellaneous %}
+{% if misc %}
 ## Miscellaneous
 
 <div class="tweets">
