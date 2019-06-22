@@ -6,7 +6,6 @@
     <script src="assets/js/nunjucks.js"></script>
     <script src="assets/js/randomColor.js"></script>
     <script src="assets/js/twitter.js"></script>
-    <script src="assets/js/unescape.js"></script>
     <script src="assets/js/vue.js"></script>
     <style>
       html,
@@ -176,7 +175,7 @@
                   }
 
                   // Add Tweets to template.
-                  ctx[listName] += `\n${tweet.url}`;
+                  ctx[listName] += `\nhttps://twitter.com${tweet.url}`;
                 });
               });
               fromDate = new Date(fromDate);
@@ -290,9 +289,9 @@
               tweet.querySelector('.tweetContents')
             ).then(() => {
               tweet.style.display = 'block';
-            });
+            }).catch(console.error);
           });
-        }, 100);
+        }, 500);
       }
 
       function loadTweet (id) {
@@ -303,8 +302,8 @@
             document.querySelector(`[data-id="${id}"] .tweetContents`)
           ).then(() => {
             document.querySelector(`[data-id="${id}"]`).style.display = 'block';
-          });
-        }, 200);
+          }).catch(console.error);
+        }, 1000);
       }
     </script>
   </body>
